@@ -19,9 +19,15 @@ from django.contrib.sites.models import Site
 
 from socialregistration.forms import UserForm, ClaimForm, ExistingUser
 from socialregistration.utils import (OAuthClient, OAuthTwitter,
-    OpenID, _https, DiscoveryFailure)
+    OpenID, _https, DiscoveryFailure, GoogleOpenIDSchemas, YahooOpenIDSchemas, MyOpenIDSchemas)
 from socialregistration.models import FacebookProfile, TwitterProfile, OpenIDProfile
 
+from openid.extensions import ax, pape, sreg
+from urlparse import urljoin
+from django.db import connection
+from django.core.urlresolvers import reverse as reverseURL
+from socialregistration import util
+from openid.consumer import consumer
 
 FB_ERROR = _('We couldn\'t validate your Facebook credentials')
 
@@ -293,6 +299,58 @@ def openid_callback(request, template='socialregistration/openid.html',
         ),
         request.session.get('openid_provider')
     )
+
+    try:
+        request_args = util.normalDict(request.GET)
+
+        if request.method == 'POST':
+            request_args.update(util.normalDict(request.POST))
+
+        if request_args:
+            client.complete()
+            c = client.consumer
+                
+        return_to = util.getViewURL(request, openid_callback)
+
+        response = client.result
+                
+        ax_items = {}
+
+        if response.status == consumer.SUCCESS:
+            provider = request.session.get('openid_provider')
+            # Set the schema uri depending on who the openid provier is:
+            # request only name and email by default (same as Google schemas):
+            schemas = GoogleOpenIDSchemas()
+            if 'yahoo' in provider:
+                schemas = YahooOpenIDSchemas()
+
+            if 'myopenid' in provider:
+                schemas = MyOpenIDSchemas()
+            
+            ax_response = {}
+            ax_response = ax.FetchResponse.fromSuccessResponse(response)
+            if ax_response:
+                # Name and email schemas are always set, but not others so check if they are not empty first:
+                birth_date = zip = gender = []
+                if schemas.birth_date_schema:
+                    birth_date = ax_response.get(schemas.birth_date_schema)
+                if schemas.zip_schema:
+                    zip =  ax_response.get(schemas.zip_schema)
+                if schemas.gender_schema:
+                    gender = ax_response.get(schemas.gender_schema)
+                ax_items = {
+                    'display_name': ax_response.get(schemas.name_schema),
+                    'email': ax_response.get(schemas.email_schema),
+                    'birth_date': birth_date,
+                    'home_zip': zip,
+                    'gender': gender,
+                }
+
+        request.session['ax_items'] = ax_items
+            
+    except Exception, e:
+        pass
+
 
     if client.is_valid():
         identity = client.result.identity_url
