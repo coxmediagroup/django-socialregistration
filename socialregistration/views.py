@@ -129,7 +129,7 @@ def setup(request, template='socialregistration/setup.html',
 if has_csrf:
     setup = csrf_protect(setup)
 
-def facebook_login(request, template='socialregistration/facebook.html',
+def facebook_login(request, template='login.html',
     extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
     """
     View to handle the Facebook login
@@ -244,7 +244,7 @@ def oauth_redirect(request, consumer_key=None, secret_key=None,
 
 def oauth_callback(request, consumer_key=None, secret_key=None,
     request_token_url=None, access_token_url=None, authorization_url=None,
-    callback_url=None, template='socialregistration/oauthcallback.html',
+    callback_url=None, template='login.html',
     extra_context=dict(), parameters=None):
     """
     View to handle final steps of OAuth based authentication where the user
@@ -285,7 +285,7 @@ def openid_redirect(request):
         request.session['openid_error'] = True
         return HttpResponseRedirect(settings.LOGIN_URL)
 
-def openid_callback(request, template='socialregistration/openid.html',
+def openid_callback(request, template='login.html',
     extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
     """
     Catches the user when he's redirected back from the provider to our site
