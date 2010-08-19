@@ -129,7 +129,7 @@ def setup(request, template='socialregistration/setup.html',
 if has_csrf:
     setup = csrf_protect(setup)
 
-def facebook_login(request, template='login.html',
+def facebook_login(request, template='socialregistration/facebook.html',
     extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
     """
     View to handle the Facebook login
@@ -137,8 +137,7 @@ def facebook_login(request, template='login.html',
     
     if request.facebook.uid is None:
         extra_context.update(dict(error=FB_ERROR))
-        return render_to_response(template, extra_context,
-            context_instance=RequestContext(request))
+        return HttpResponseRedirect(reverse('login'))
 
     user = authenticate(uid=request.facebook.uid)
 
@@ -244,7 +243,7 @@ def oauth_redirect(request, consumer_key=None, secret_key=None,
 
 def oauth_callback(request, consumer_key=None, secret_key=None,
     request_token_url=None, access_token_url=None, authorization_url=None,
-    callback_url=None, template='login.html',
+    callback_url=None, template='socialregistration/oauthcallback.html',
     extra_context=dict(), parameters=None):
     """
     View to handle final steps of OAuth based authentication where the user
@@ -256,9 +255,7 @@ def oauth_callback(request, consumer_key=None, secret_key=None,
     extra_context.update(dict(oauth_client=client))
 
     if not client.is_valid():
-        return render_to_response(
-            template, extra_context, context_instance=RequestContext(request)
-        )
+        return HttpResponseRedirect(reverse('login'))
 
     # We're redirecting to the setup view for this oauth service
     return HttpResponseRedirect(reverse(client.callback_url))
@@ -285,7 +282,7 @@ def openid_redirect(request):
         request.session['openid_error'] = True
         return HttpResponseRedirect(settings.LOGIN_URL)
 
-def openid_callback(request, template='login.html',
+def openid_callback(request, template='socialregistration/openid.html',
     extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
     """
     Catches the user when he's redirected back from the provider to our site
@@ -382,8 +379,4 @@ def openid_callback(request, template='login.html',
         login(request, user)
         return HttpResponseRedirect(_get_next(request))
 
-    return render_to_response(
-        template,
-        dict(),
-        context_instance=RequestContext(request)
-    )
+    return HttpResponseRedirect(reverse('login'))
