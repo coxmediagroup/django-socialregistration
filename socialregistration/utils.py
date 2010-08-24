@@ -40,6 +40,8 @@ from django.contrib.sites.models import Site
 from socialregistration.models import OpenIDStore as OpenIDStoreModel, OpenIDNonce
 from urlparse import urlparse
 
+from openid.extensions import ax
+
 USE_HTTPS = bool(getattr(settings, 'SOCIALREGISTRATION_USE_HTTPS', False))
 
 def _https():
@@ -135,10 +137,34 @@ class OpenID(object):
 
     def get_redirect(self):
         auth_request = self.consumer.begin(self.endpoint)
+        # Set the schema uri depending on who the openid provier is:
+        # request only name and email by default (same as Google schemas):
+        schemas = GoogleOpenIDSchemas()
+        
+        if 'yahoo' in self.endpoint:
+            schemas = YahooOpenIDSchemas()
+
+        elif 'myopenid' in self.endpoint:
+            schemas = MyOpenIDSchemas()
+
+        # Add Attribute Exchange request information:
+        ax_request = ax.FetchRequest()
+        ax_request.add(ax.AttrInfo(schemas.name_schema, required=True))
+        ax_request.add(ax.AttrInfo(schemas.email_schema, required=True, count=1))
+        # Name and email schemas are always set, but not others so check if they are not empty first:
+        if schemas.birth_date_schema:
+            ax_request.add(ax.AttrInfo(schemas.birth_date_schema, required=True))
+        if schemas.zip_schema:
+            ax_request.add(ax.AttrInfo(schemas.zip_schema, required=True))
+        if schemas.gender_schema:
+            ax_request.add(ax.AttrInfo(schemas.gender_schema, required=True))
+        auth_request.addExtension(ax_request)
+        
         redirect_url = auth_request.redirectURL(
             'http%s://%s/' % (_https(), Site.objects.get_current().domain),
             self.return_to
         )
+
         return HttpResponseRedirect(redirect_url)
 
     def complete(self):
@@ -168,6 +194,37 @@ def get_token_prefix(url):
     """
     return urllib2.urlparse.urlparse(url).netloc
 
+class OpenIDSchemas(object):
+    def __init__(self):
+        self.name_schema = 'http://axschema.org/namePerson/first'
+        self.email_schema = 'http://axschema.org/contact/email'
+        self.birth_date_schema = 'http://axschema.org/birthDate'
+        self.zip_schema = 'http://axschema.org/contact/postalCode/home'
+        self.gender_schema = 'http://axschema.org/person/gender'
+        
+class YahooOpenIDSchemas(OpenIDSchemas):
+    def __init__(self):
+        self.name_schema = 'http://axschema.org/namePerson'
+        self.email_schema = 'http://axschema.org/contact/email'
+        self.birth_date_schema = ''
+        self.zip_schema = ''
+        self.gender_schema = 'http://axschema.org/person/gender'
+        
+class GoogleOpenIDSchemas(OpenIDSchemas):
+    def __init__(self):
+        self.name_schema = 'http://axschema.org/namePerson/first'
+        self.email_schema = 'http://axschema.org/contact/email'
+        self.birth_date_schema = ''
+        self.zip_schema = ''
+        self.gender_schema = ''
+        
+class MyOpenIDSchemas(OpenIDSchemas):
+    def __init__(self):
+        self.name_schema = 'http://schema.openid.net/namePerson'
+        self.email_schema = 'http://schema.openid.net/contact/email'
+        self.birth_date_schema = 'http://schema.openid.net/birthDate'
+        self.zip_schema = 'http://schema.openid.net/contact/postalCode/home'
+        self.gender_schema = 'http://schema.openid.net/person/gender'
 
 class OAuthError(Exception):
     pass
