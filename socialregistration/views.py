@@ -265,7 +265,7 @@ def openid_redirect(request):
     Redirect the user to the openid provider
     """
     request.session['next'] = _get_next(request)
-    request.session['openid_provider'] = request.GET.get('openid_provider')
+    request.session['openid_provider'] = request.GET.get('openid_provider').strip()
 
     client = OpenID(
         request,
@@ -274,7 +274,7 @@ def openid_redirect(request):
             Site.objects.get_current().domain,
             reverse('openid_callback')
         ),
-        request.GET.get('openid_provider')
+        request.GET.get('openid_provider').strip()
     )
     try:
         return client.get_redirect()
