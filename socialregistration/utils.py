@@ -264,8 +264,8 @@ class OAuthClient(object):
         if self.request_token is None:
             if self.callback_url is not None:
                 params = urllib.urlencode([
-                    ('oauth_callback', 'http://%s%s%s' % (self.request.session.get('gur_callback_vm', ''),
-                        Site.objects.get_current(), reverse(self.callback_url))),
+                    ('oauth_callback', 'http://%s%s' % (self.request.build_absolute_uri(),
+                        reverse(self.callback_url))),
                 ])
                 request_token_url = '%s?%s' % (self.request_token_url, urllib.quote(params))
             else:
