@@ -263,14 +263,11 @@ class OAuthClient(object):
         """
         if self.request_token is None:
             if self.callback_url is not None:
-                params = urllib.urlencode([
-                    ('oauth_callback', 'http://%s%s' % (Site.objects.get_current(),
-                        reverse(self.callback_url))),
-                ])
-                request_token_url = '%s?%s' % (self.request_token_url, urllib.quote(params))
+                params = urllib.urlencode({'oauth_callback':'http://%s%s' % (self.request.get_host(),
+                    reverse(self.callback_url))})
+                response, content = self.client.request(self.request_token_url, "POST", body=params)
             else:
-                request_token_url = self.request_token_url
-            response, content = self.client.request(request_token_url, "GET")
+                response, content = self.client.request(self.request_token_url, "GET")
             if response['status'] != '200':
                 raise OAuthError(
                     _('Invalid response while obtaining request token from "%s".') % get_token_prefix(self.request_token_url))
