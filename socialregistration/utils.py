@@ -263,7 +263,7 @@ class OAuthClient(object):
         """
         if self.request_token is None:
             if self.callback_url is not None:
-                params = urllib.urlencode({'oauth_callback':'http://%s%s' % (self.request.get_host(),
+                params = urllib.urlencode({'oauth_callback': 'http://%s%s' % (self.request.get_host(),
                     reverse(self.callback_url))})
                 response, content = self.client.request(self.request_token_url, "POST", body=params)
             else:

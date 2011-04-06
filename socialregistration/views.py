@@ -108,7 +108,7 @@ def setup(request, template='socialregistration/setup.html',
 
         return render_to_response(template, extra_context,
             context_instance=RequestContext(request))
-        
+
     else:
         # Generate user and profile
         social_user.username = str(uuid.uuid4())[:30]
@@ -134,7 +134,7 @@ def facebook_login(request, template='socialregistration/facebook.html',
     """
     View to handle the Facebook login
     """
-    
+
     if request.facebook.uid is None:
         extra_context.update(dict(error=FB_ERROR))
         return HttpResponseRedirect(reverse('login'))
@@ -164,7 +164,7 @@ def facebook_connect(request, template='socialregistration/facebook.html',
         extra_context.update(dict(error=FB_ERROR))
         return render_to_response(template, extra_context,
             context_instance=RequestContext(request))
-    
+
     try:
         profile = FacebookProfile.objects.get(uid=request.facebook.uid)
     except FacebookProfile.DoesNotExist:
@@ -265,7 +265,8 @@ def openid_redirect(request):
     Redirect the user to the openid provider
     """
     request.session['next'] = _get_next(request)
-    request.session['openid_provider'] = request.GET.get('openid_provider').strip()
+    openid_provider = request.GET.get('openid_provider', '').strip()
+    request.session['openid_provider'] = openid_provider
 
     client = OpenID(
         request,
@@ -274,7 +275,7 @@ def openid_redirect(request):
             Site.objects.get_current().domain,
             reverse('openid_callback')
         ),
-        request.GET.get('openid_provider').strip()
+        openid_provider
     )
     try:
         return client.get_redirect()
@@ -306,11 +307,11 @@ def openid_callback(request, template='socialregistration/openid.html',
         if request_args:
             client.complete()
             c = client.consumer
-                
+
         return_to = util.getViewURL(request, openid_callback)
 
         response = client.result
-                
+
         ax_items = {}
 
         if response.status == consumer.SUCCESS:
@@ -323,7 +324,7 @@ def openid_callback(request, template='socialregistration/openid.html',
 
             if 'myopenid' in provider:
                 schemas = MyOpenIDSchemas()
-            
+
             ax_response = {}
             ax_response = ax.FetchResponse.fromSuccessResponse(response)
             if ax_response:
@@ -344,7 +345,7 @@ def openid_callback(request, template='socialregistration/openid.html',
                 }
 
         request.session['ax_items'] = ax_items
-            
+
     except Exception, e:
         pass
 
