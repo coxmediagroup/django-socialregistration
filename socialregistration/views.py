@@ -141,6 +141,8 @@ def facebook_login(request, template='socialregistration/facebook.html',
 
     user = authenticate(uid=request.facebook.uid)
 
+    request.session['socialregistration_client'] = 'facebook'
+
     if user is None:
         request.session['socialregistration_user'] = User()
         request.session['socialregistration_profile'] = FacebookProfile(uid=request.facebook.uid)
@@ -199,6 +201,7 @@ def twitter(request, account_inactive_template='socialregistration/account_inact
     )
 
     user_info = client.get_user_info()
+    request.session['socialregistration_client'] = 'twitter'
 
     if request.user.is_authenticated():
         # Handling already logged in users connecting their accounts
@@ -267,6 +270,7 @@ def openid_redirect(request):
     request.session['next'] = _get_next(request)
     openid_provider = request.GET.get('openid_provider', '').strip()
     request.session['openid_provider'] = openid_provider
+    request.session['socialregistration_client'] = 'openid'
 
     client = OpenID(
         request,
@@ -311,7 +315,7 @@ def openid_callback(request, template='socialregistration/openid.html',
         return_to = util.getViewURL(request, openid_callback)
 
         response = client.result
-
+        request.session['socialregistration_client'] = 'openid'
         ax_items = {}
 
         if response.status == consumer.SUCCESS:
