@@ -1,4 +1,5 @@
 import uuid
+import urllib
 
 from django.conf import settings
 from django.template import RequestContext
@@ -128,6 +129,51 @@ def setup(request, template='socialregistration/setup.html',
 
 if has_csrf:
     setup = csrf_protect(setup)
+
+def facebook_oauth_login(request, template='socialregistration/facebook.html',
+    extra_context={}):
+    """ View to handle the facebook oauth login process """
+    if request.REQUEST.get("device"):
+        device = request.REQUEST.get("device")
+    else:
+        device = "user-agent"
+    
+    params = {}
+    params["client_id"] = getattr(settings, "FACEBOOK_APP_ID")
+    params["redirect_uri"] = request.build_absolute_uri(reverse("facebook_oauth_login_done"))
+    
+    url = "https://graph.facebook.com/oauth/authorize?"+urllib.urlencode(params)
+    return HttpResponseRedirect(url)
+
+def facebook_oauth_login_done(request, template="socialregistration.facebook.html",
+    extra_context={}, account_inactive_template="socialregistration/account_inactive.html"):
+    """ Handle the oauth callback with requested account information and params """
+    user = authenticate(request=request)
+    app_id = getattr(settings, "FACEBOOK_APP_ID")
+    
+    if not user:
+        if not request.facebook.uid:
+            # Facebook Authentication Failed
+            request.COOKIES.pop(app_id + "_session_key", None)
+            request.COOKIES.pop(app_id + "_user", None)
+            extra_context.update({"error" : FB_ERROR})
+            return HttpResponseRedirect(reverse("login"))
+        else:
+            # Facebook authentication passed but this 
+            # FacebookProfile + Site doesn't exist, so
+            # create it. 
+            request.session['socialregistration_user'] = User()
+            request.session['socialregistration_profile'] = FacebookProfile(uid=request.facebook.uid)
+            request.session['next'] = _get_next(request)
+            return HttpResponseRedirect(reverse('socialregistration_setup'))
+    
+    if not user.is_active:
+        return render_to_response(account_inactive_template, extra_context,
+            context_instance=RequestContext(request))
+
+    login(request, user)
+
+    return HttpResponseRedirect(_get_next(request))
 
 def facebook_login(request, template='socialregistration/facebook.html',
     extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
