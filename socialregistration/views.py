@@ -3,7 +3,6 @@ import urllib
 import facebook
 import logging
 
-
 from django.conf import settings
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
