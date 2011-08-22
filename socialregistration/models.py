@@ -12,8 +12,8 @@ class FacebookProfile(models.Model):
     def __unicode__(self):
         return u'%s: %s' % (self.user, self.uid)
     
-    def authenticate(self):
-        return authenticate(uid=self.uid)
+    def authenticate(self, request=None):
+        return authenticate(request=request)
 
 class TwitterProfile(models.Model):
     user = models.ForeignKey(User)
@@ -23,7 +23,7 @@ class TwitterProfile(models.Model):
     def __unicode__(self):
         return u'%s: %s' % (self.user, self.twitter_id)
     
-    def authenticate(self):
+    def authenticate(self, request=None):
         return authenticate(twitter_id=self.twitter_id)
 
 class OpenIDProfile(models.Model):
@@ -34,7 +34,7 @@ class OpenIDProfile(models.Model):
     def __unicode__(self):
         return u'OpenID Profile for %s, via provider %s' % (self.user, self.identity)
 
-    def authenticate(self):
+    def authenticate(self, request=None):
         return authenticate(identity=self.identity)
 
 class OpenIDStore(models.Model):
