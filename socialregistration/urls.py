@@ -19,15 +19,15 @@ urlpatterns = patterns('',
 # Setup Facebook URLs if there's an API key specified
 if getattr(settings, 'FACEBOOK_API_KEY', None) is not None:
     urlpatterns = urlpatterns + patterns('',
-        url('^facebook/login/$', 'socialregistration.views.facebook_login',
-            name='facebook_login'),
+        #url('^facebook/login/$', 'socialregistration.views.facebook_login',
+        #    name='facebook_login'),
 
         url('^facebook/connect/$', 'socialregistration.views.facebook_connect',
             name='facebook_connect'),
 
-        url('^xd_receiver.htm', 'django.views.generic.simple.direct_to_template',
-            {'template':'socialregistration/xd_receiver.html'},
-            name='facebook_xd_receiver'),
+        #url('^xd_receiver.htm', 'django.views.generic.simple.direct_to_template',
+        #    {'template':'socialregistration/xd_receiver.html'},
+        #    name='facebook_xd_receiver'),
         
         # OAuth URIs
         url(r"^facebook_oauth/login/$", 'socialregistration.views.facebook_oauth_login', name="facebook_oauth_login"),
