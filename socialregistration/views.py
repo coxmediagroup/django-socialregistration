@@ -1,5 +1,6 @@
 import uuid
 import urllib
+import facebook
 
 from django.conf import settings
 from django.template import RequestContext
@@ -137,11 +138,12 @@ def facebook_oauth_login(request, template='socialregistration/facebook.html',
         device = request.REQUEST.get("device")
     else:
         device = "user-agent"
-    
+
     params = {}
     params["client_id"] = getattr(settings, "FACEBOOK_APP_ID")
     params["redirect_uri"] = request.build_absolute_uri(reverse("facebook_oauth_login_done"))
-    
+    logger.info("extra context:")
+    logger.info(extra_context)
     url = "https://graph.facebook.com/oauth/authorize?"+urllib.urlencode(params)
     return HttpResponseRedirect(url)
 
@@ -150,72 +152,79 @@ def facebook_oauth_login_done(request, template="socialregistration.facebook.htm
     """ Handle the oauth callback with requested account information and params """
     user = authenticate(request=request)
     app_id = getattr(settings, "FACEBOOK_APP_ID")
-    
-    if not user:
-        if not request.facebook.uid:
-            # Facebook Authentication Failed
-            request.COOKIES.pop(app_id + "_session_key", None)
-            request.COOKIES.pop(app_id + "_user", None)
-            extra_context.update({"error" : FB_ERROR})
-            return HttpResponseRedirect(reverse("login"))
-        else:
-            # Facebook authentication passed but this 
-            # FacebookProfile + Site doesn't exist, so
-            # create it. 
-            request.session['socialregistration_user'] = User()
-            request.session['socialregistration_profile'] = FacebookProfile(uid=request.facebook.uid)
-            request.session['next'] = _get_next(request)
-            return HttpResponseRedirect(reverse('socialregistration_setup'))
-    
-    if not user.is_active:
-        return render_to_response(account_inactive_template, extra_context,
-            context_instance=RequestContext(request))
-
-    login(request, user)
-
-    return HttpResponseRedirect(_get_next(request))
-
-def facebook_login(request, template='socialregistration/facebook.html',
-    extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
-    """
-    View to handle the Facebook login
-    """
-
-    if request.facebook.uid is None:
-        extra_context.update(dict(error=FB_ERROR))
-        return HttpResponseRedirect(reverse('login'))
-
-    user = authenticate(uid=request.facebook.uid)
-
+    logger.debug("User is %s" % user)
+    logger.info(request)
     if user is None:
         request.session['socialregistration_user'] = User()
         request.session['socialregistration_profile'] = FacebookProfile(uid=request.facebook.uid)
+        logger.debug("No User")
+        # Facebook Authentication Failed
+        request.COOKIES.pop(app_id + "_session_key", None)
+        request.COOKIES.pop(app_id + "_user", None)
+        extra_context.update({"error" : FB_ERROR})
+        return HttpResponseRedirect(reverse("login"))
+
+    elif not user.pk:
+        logger.debug("No User PK")
+        # New user was created
         request.session['next'] = _get_next(request)
         return HttpResponseRedirect(reverse('socialregistration_setup'))
 
-    if not user.is_active:
+    elif not user.is_active:
+        logger.debug("user not active")
         return render_to_response(account_inactive_template, extra_context,
             context_instance=RequestContext(request))
-
+    logger.debug("loggin in")
     login(request, user)
 
     return HttpResponseRedirect(_get_next(request))
+
+#def facebook_login(request, template='socialregistration/facebook.html',
+#    extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
+#    """
+#    View to handle the Facebook login
+#    """
+#    
+#    if request.facebook.uid is None:
+#        extra_context.update(dict(error=FB_ERROR))
+#        return HttpResponseRedirect(reverse('login'))
+#
+#    user = authenticate(uid=request.facebook.uid)
+#
+#    if user is None:
+#        request.session['socialregistration_user'] = User()
+#        request.session['socialregistration_profile'] = FacebookProfile(uid=request.facebook.uid)
+#        request.session['next'] = _get_next(request)
+#        return HttpResponseRedirect(reverse('socialregistration_setup'))
+#
+#    if not user.is_active:
+#        return render_to_response(account_inactive_template, extra_context,
+#            context_instance=RequestContext(request))
+#
+#    login(request, user)
+#
+#    return HttpResponseRedirect(_get_next(request))
 
 def facebook_connect(request, template='socialregistration/facebook.html',
     extra_context=dict()):
     """
     View to handle connecting existing django accounts with facebook
     """
-    if request.facebook.uid is None or request.user.is_authenticated() is False:
+    cookie = facebook.get_user_from_cookie(request.COOKIES, FACEBOOK_APP_ID, FACEBOOK_SECRET_KEY)
+    
+    if not cookie or request.user.is_authenticated() is False:
         extra_context.update(dict(error=FB_ERROR))
         return render_to_response(template, extra_context,
             context_instance=RequestContext(request))
 
     try:
-        profile = FacebookProfile.objects.get(uid=request.facebook.uid)
+        params = {"access_token" : cookie['access_token']}
+        url = 'https://graph.facebook.com/me?' + urllib.urlencode(params)
+        user_data = simplejson.load(urllib.urlopen(url))
+        profile = FacebookProfile.objects.get(uid=user_data["id"])
     except FacebookProfile.DoesNotExist:
         profile = FacebookProfile.objects.create(user=request.user,
-            uid=request.facebook.uid)
+            uid=user_data["id"])
 
     return HttpResponseRedirect(_get_next(request))
 
