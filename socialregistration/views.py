@@ -145,8 +145,6 @@ def facebook_oauth_login(request, template='socialregistration/facebook.html',
     params["client_id"] = getattr(settings, "FACEBOOK_APP_ID")
     params["redirect_uri"] = request.build_absolute_uri(reverse("facebook_oauth_login_done"))
     params['scope'] = getattr(settings, "FACEBOOK_SCOPE")
-    logger.info("extra context:")
-    logger.info(extra_context)
     url = "https://graph.facebook.com/oauth/authorize?"+urllib.urlencode(params)
     request.session["next"] = _get_next(request)
     return HttpResponseRedirect(url)
