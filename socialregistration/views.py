@@ -1,6 +1,8 @@
 import uuid
 import urllib
 import facebook
+import logging
+
 
 from django.conf import settings
 from django.template import RequestContext
@@ -34,6 +36,7 @@ from openid.consumer import consumer
 FB_ERROR = _('We couldn\'t validate your Facebook credentials')
 
 GENERATE_USERNAME = bool(getattr(settings, 'SOCIALREGISTRATION_GENERATE_USERNAME', False))
+logger = logging.getLogger(__name__)
 
 def _get_next(request):
     """
@@ -142,9 +145,9 @@ def facebook_oauth_login(request, template='socialregistration/facebook.html',
     params = {}
     params["client_id"] = getattr(settings, "FACEBOOK_APP_ID")
     params["redirect_uri"] = request.build_absolute_uri(reverse("facebook_oauth_login_done"))
-    logger.info("extra context:")
-    logger.info(extra_context)
+    params['scope'] = getattr(settings, "FACEBOOK_SCOPE")
     url = "https://graph.facebook.com/oauth/authorize?"+urllib.urlencode(params)
+    request.session["next"] = _get_next(request)
     return HttpResponseRedirect(url)
 
 def facebook_oauth_login_done(request, template="socialregistration.facebook.html",
@@ -153,10 +156,8 @@ def facebook_oauth_login_done(request, template="socialregistration.facebook.htm
     user = authenticate(request=request)
     app_id = getattr(settings, "FACEBOOK_APP_ID")
     logger.debug("User is %s" % user)
-    logger.info(request)
+    logger.debug(request.session.items())
     if user is None:
-        request.session['socialregistration_user'] = User()
-        request.session['socialregistration_profile'] = FacebookProfile(uid=request.facebook.uid)
         logger.debug("No User")
         # Facebook Authentication Failed
         request.COOKIES.pop(app_id + "_session_key", None)
