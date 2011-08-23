@@ -86,7 +86,7 @@ class FacebookBackend(Auth):
         params = {"access_token" : token}
         url = 'https://graph.facebook.com/me?' + urllib.urlencode(params)
         user_data = simplejson.load(urllib.urlopen(url))
-        logger.debug("user_data is %s" % user_data)         
+        logger.debug("user_data is %s" % user_data)
         return user_data
 
     def authenticate(self, request, user=None):
