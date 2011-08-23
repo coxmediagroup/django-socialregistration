@@ -90,6 +90,9 @@ class FacebookBackend(Auth):
         return user_data
 
     def authenticate(self, request, user=None):
+        """ Authentication for facebook oauth 2 returns a User object 
+        if authentication is successful, returns None in the face of failure
+        """
         logger.debug("In authenticate")
         cookie = facebook.get_user_from_cookie(request.COOKIES, FACEBOOK_APP_ID, FACEBOOK_SECRET_KEY)
 
@@ -107,7 +110,7 @@ class FacebookBackend(Auth):
             # this is mostly for the registration process where authenticate
             # is called (through the model...) without the prelim facebook_oauth_login call which
             # is where the code is included into the GET params
-            if "facebook_code" in request.session.keys():
+            if "facebook_code" in request.session:
                 code = request.session["facebook_code"]
             else:
                 code = request.GET.get('code', '')
@@ -127,8 +130,6 @@ class FacebookBackend(Auth):
 
         try:
             fb_user = FacebookProfile.objects.get(uid=uid, site=Site.objects.get_current())
-            return fb_user.user
-
         except FacebookProfile.DoesNotExist:
             # Facebook authentication passed but this
             # FacebookProfile + Site doesn't exist, so
@@ -139,3 +140,5 @@ class FacebookBackend(Auth):
             request.session['socialregistration_user'] = user
             request.session['socialregistration_profile'] = fb_profile
             return user
+        else:
+            return fb_user.user
