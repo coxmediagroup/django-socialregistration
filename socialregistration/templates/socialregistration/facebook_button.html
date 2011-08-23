@@ -2,11 +2,6 @@
 {% comment %}
 <fb:login-button autologoutlink="true" perms="email,user_birthday,status_update,publish_stream"></fb:login-button>
 {% endcomment %}
-
-<form class="connect-button" name="login" method="post" action="{% if logged_in %}{% url facebook_oauth_login_done %}{% else %}{% url facebook_oauth_login %}{% endif %}">
 {% social_csrf_token %}
-{% if next %}
-    <input type="hidden" name="next" value="{{ next }}" />
-{% endif %}
-<input type="image" onclick="facebookConnect(this.form);return false;" src="http://static.ak.fbcdn.net/images/fbconnect/login-buttons/connect_light_large_long.gif" />
-</form>
+<a href="/socreg/facebook_oauth/login{%if request.GET.extra%}extra={{request.GET.extra}}&{%endif%}next={{next|urlencode}}">
+<img src="http://static.ak.fbcdn.net/images/fbconnect/login-buttons/connect_light_large_long.gif" /></a>
