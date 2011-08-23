@@ -53,11 +53,11 @@ class OpenIDAuth(Auth):
             return None
 
 class FacebookBackend(Auth):
-    """ Shamlessly ripped from socialauth. 
+    """ Shamlessly ripped from socialauth.
         Class/method to authenticate users against facebook oauth2 api. """
 
     def get_access_token(self, code, redirect_uri):
-        """ Retrieve the access_token from fb oauth 
+        """ Retrieve the access_token from fb oauth
             TODO: implement in helpers and migrate
             standalone implementations.
         """
@@ -66,22 +66,22 @@ class FacebookBackend(Auth):
         params["client_secret"] = FACEBOOK_SECRET_KEY
         params["redirect_uri"] = redirect_uri
         params["code"] = code
-        
+
         url = "https://graph.facebook.com/oauth/access_token?"+urllib.urlencode(params)
         from cgi import parse_qs
         userdata = urllib.urlopen(url).read()
         resp_dict = parse_qs(userdata)
         logger.debug("response dictionary is %s" % resp_dict)
         if not 'access_token' in resp_dict.keys():
-            return None 
+            return None
         elif "error" in resp_dict.keys():
             return resp_dict["error"]
         else:
             return resp_dict["access_token"][-1]
-    
+
     def get_user_data(self, token):
-        """ 
-        Retrieve information about the user from facebook 
+        """
+        Retrieve information about the user from facebook
         """
         params = {"access_token" : token}
         url = 'https://graph.facebook.com/me?' + urllib.urlencode(params)
@@ -99,16 +99,16 @@ class FacebookBackend(Auth):
             # if cookie does not exist
             # assume logging in normal way
             redir_uri = request.build_absolute_uri(reverse("facebook_oauth_login_done"))
-            
+
             # As far as I can tell this code never expires
-            # Try retrieving the code from teh session but if we've 
+            # Try retrieving the code from teh session but if we've
             # hit the standard login process for the first time
             # retrieve the code from get params and store it in the session.
             # this is mostly for the registration process where authenticate
             # is called (through the model...) without the prelim facebook_oauth_login call which
             # is where the code is included into the GET params
             if "facebook_code" in request.session.keys():
-                code = request.session["facebook_code"] 
+                code = request.session["facebook_code"]
             else:
                 code = request.GET.get('code', '')
                 if code:
@@ -119,7 +119,7 @@ class FacebookBackend(Auth):
         # information about the user.
         if access_token:
             request.session["facebook_access_token"] = access_token
-            user_data = self.get_user_data(access_token)       
+            user_data = self.get_user_data(access_token)
             logger.debug("user_data is  %s" % user_data)
             uid = user_data["id"]
         else:
@@ -130,7 +130,7 @@ class FacebookBackend(Auth):
             return fb_user.user
 
         except FacebookProfile.DoesNotExist:
-            # Facebook authentication passed but this 
+            # Facebook authentication passed but this
             # FacebookProfile + Site doesn't exist, so
             # create it.
             logger.debug("Auth DoesNotExist\n")
