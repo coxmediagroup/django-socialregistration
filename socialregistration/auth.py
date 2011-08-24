@@ -22,16 +22,6 @@ class Auth(object):
         except User.DoesNotExist:
             return None
 
-#class FacebookAuth(Auth):
-#    def authenticate(self, uid=None):
-#        try:
-#            return FacebookProfile.objects.get(
-#                uid=uid,
-#                site=Site.objects.get_current()
-#            ).user
-#        except FacebookProfile.DoesNotExist:
-#            return None
-
 class TwitterAuth(Auth):
     def authenticate(self, twitter_id=None):
         try:

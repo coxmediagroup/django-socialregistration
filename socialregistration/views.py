@@ -179,32 +179,6 @@ def facebook_oauth_login_done(request, template="socialregistration.facebook.htm
 
     return HttpResponseRedirect(_get_next(request))
 
-#def facebook_login(request, template='socialregistration/facebook.html',
-#    extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
-#    """
-#    View to handle the Facebook login
-#    """
-#    
-#    if request.facebook.uid is None:
-#        extra_context.update(dict(error=FB_ERROR))
-#        return HttpResponseRedirect(reverse('login'))
-#
-#    user = authenticate(uid=request.facebook.uid)
-#
-#    if user is None:
-#        request.session['socialregistration_user'] = User()
-#        request.session['socialregistration_profile'] = FacebookProfile(uid=request.facebook.uid)
-#        request.session['next'] = _get_next(request)
-#        return HttpResponseRedirect(reverse('socialregistration_setup'))
-#
-#    if not user.is_active:
-#        return render_to_response(account_inactive_template, extra_context,
-#            context_instance=RequestContext(request))
-#
-#    login(request, user)
-#
-#    return HttpResponseRedirect(_get_next(request))
-
 def facebook_connect(request, template='socialregistration/facebook.html',
     extra_context=dict()):
     """
