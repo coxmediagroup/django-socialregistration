@@ -136,11 +136,6 @@ if has_csrf:
 def facebook_oauth_login(request, template='socialregistration/facebook.html',
     extra_context={}):
     """ View to handle the facebook oauth login process """
-    if request.REQUEST.get("device"):
-        device = request.REQUEST.get("device")
-    else:
-        device = "user-agent"
-
     params = {}
     params["client_id"] = getattr(settings, "FACEBOOK_APP_ID")
     params["redirect_uri"] = request.build_absolute_uri(reverse("facebook_oauth_login_done"))
